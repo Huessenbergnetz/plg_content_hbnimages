@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<extension method="upgrade" type="plugin" group="content">
+    <name>PLG_CONTENT_HBNIMAGES</name>
+    <version>0.0.1</version>
+    <description>PLG_CONTENT_HBNIMAGES_DESCRIPTION</description>
+    <author>Matthias Fehring</author>
+    <creationDate>2024-11</creationDate>
+    <copyright>(C) 2024 Matthias Fehring</copyright>
+    <license>GNU General Public License version 2 or later</license>
+    <namespace path="src">HBN\Plugin\Content\HbnImages</namespace>
+    <files>
+        <folder plugin="hbnimages">services</folder>
+        <folder>src</folder>
+    </files>
+    <languages>
+        <language tag="en-GB">language/en-GB/plg_content_hbnimages.ini</language>
+        <language tag="en-GB">language/en-GB/plg_content_hbnimages.sys.ini</language>
+        <language tag="de-DE">language/de-DE/plg_content_hbnimages.ini</language>
+        <language tag="de-DE">language/de-DE/plg_content_hbnimages.sys.ini</language>
+    </languages>
+</extension>
