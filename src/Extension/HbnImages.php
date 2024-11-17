@@ -10,6 +10,12 @@ use Joomla\CMS\Event\Content\ContentPrepareEvent;
 use Joomla\Event\SubscriberInterface;
 use Joomla\CMS\Factory;
 use Joomla\CMS\Document\Document;
+use Joomla\CMS\Http\HttpFactory;
+use Joomla\CMS\Uri\Uri;
+use Joomla\CMS\Image\Image;
+use Joomla\CMS\Log\Log;
+use Joomla\Filesystem\File;
+use Joomla\Filesystem\Folder;
 
 class HbnImages extends CMSPlugin implements SubscriberInterface
 {
@@ -40,27 +46,153 @@ class HbnImages extends CMSPlugin implements SubscriberInterface
 
     private function onContentPrepareArticle($article) : void {
         $article->text = preg_replace_callback('/<img [^>]*>/',
-                                               [$this, 'createPicture'],
+                                               [$this, 'createArticlePicture'],
                                                $article->text);
     }
 
-    private function createPicture(array $matches) : string {
+    private function createArticlePicture(array $matches) : string {
         $img = $matches[0];
-        $ri = self::getResizedImage($img, 0);
-        return '<picture>' . $img . '</picture>';
-    }
 
-    private function getResizedImage(string $img, int $width) : string {
-        $matches = array();
-        if (preg_match('/src=["\']([^"\']+)/', $img, $matches) !== 1) {
-            return '';
+        $this->log("Found img tag {$img}");
+
+        $imgAttrs = $this->getImgTagAttrs($img);
+        if (empty($imgAttrs)) {
+            return $img;
         }
 
-        $src = $matches[1];
+        $srcUri = $this->checkIsOurImage($imgAttrs['src']);
+        if ($srcUri === false) {
+            return $img;
+        }
 
-        // echo '<pre>';
-        // print_r($matches);
-        // echo '</pre>';
-        return $img;
+        $pic = '<picture>';
+
+        $pic .= '<source type="image/webp" srcset="' . $this->getResizedImage($srcUri, 300) . '" media="(min-width: 768px)">';
+        $pic .= '<source type="image/webp" srcset="' . $this->getResizedImage($srcUri, 800) . '" media="(max-width: 767px)">';
+
+        $pic .= $img;
+        $pic .= '</picture>';
+
+        return $pic;
+    }
+
+    private function getResizedImage(Uri $src, int $width, string $type = 'webp') : string {
+        $origFilePath = JPATH_ROOT . '/' . urldecode($src->getPath());
+        $cacheFile = 'cache/hbnimages/' . (string)$width . '/' . File::stripExt($src->getPath()) . '.' . $type;
+
+        $this->createCacheDir(urldecode($cacheFile));
+
+        $cacheFilePath = JPATH_ROOT . '/' . urldecode($cacheFile);
+
+        if (file_exists($cacheFilePath)) {
+            if (filemtime($cacheFilePath) > filemtime($origFilePath)) {
+                return $cacheFile;
+            }
+        }
+
+        $srcUrl = Uri::root() . $src->getPath();
+        $this->getResizedImageImaginary($cacheFilePath, $srcUrl, $width, $type);
+        // $this->getResizedImageJoomla($cacheFilePath, $origFilePath, $width, $type);
+
+        return $cacheFile;
+    }
+
+    private function getResizedImageImaginary(string $cacheFilePath, string $srcUrl, int $width, string $type = 'webp') : bool {
+        $uri = new Uri('http://localhost:8088/resize');
+        $uri->setQuery(['width' => $width, 'type' => $type, 'url' => $srcUrl, 'quality' => 80]);
+
+        $http = HttpFactory::getHttp();
+        $response = $http->get($uri);
+
+        File::write($cacheFilePath, $response->body);
+
+        return true;
+    }
+
+    private function getResizedImageJoomla(string $cacheFilePath, string $origFilePath, int $width, string $type = 'webp') : bool {
+        $img = new Image($origFilePath);
+
+        if ($img->getWidth() != $width) {
+            $origWidth = $img->getWidth();
+            $origHeight = $img->getHeight();
+            $ratio = $width / $origWidth;
+            $height = (int)round($origHeight * $ratio);
+            $img = $img->resize($width, $height);
+        }
+
+        return $img->toFile($cacheFilePath, IMAGETYPE_WEBP, ['quality' => 80]);
+    }
+
+    private function createCacheDir(string $cacheFilePath) : void {
+        $dirName = dirname($cacheFilePath);
+        if (file_exists(JPATH_ROOT . '/' . $dirName)) {
+            return;
+        }
+        $parts = array_filter(explode('/', $dirName));
+        if (empty($parts)) {
+            return;
+        }
+
+        $currentPath = JPATH_ROOT;
+        foreach ($parts as $part) {
+            $currentPath .= '/' . $part;
+            if (!file_exists($currentPath)) {
+                Folder::create($currentPath);
+            }
+            $indexFile = $currentPath . '/index.html';
+            if (!file_exists($indexFile)) {
+                File::write($indexFile, '<!DOCTYPE html><title></title>');
+            }
+        }
+    }
+
+    private function getImgTagAttrs(string $imgTag) : array {
+        $attrs = array();
+
+        $matches = array();
+        preg_match_all('/([\w-]+)=[\'"]([^"\']+)[\'"]/', $imgTag, $matches, PREG_SET_ORDER);
+        if (empty($matches)) {
+            return $data;
+        }
+
+        $data = array();
+        foreach ($matches as $match) {
+            $key = $match[1];
+            $value = $match[2];
+            if (str_starts_with($key, 'data-')) {
+                $data[substr($key, 5)] = $value;
+            } else {
+                $attrs[$key] = $value;
+            }
+        }
+        if (!empty($data)) {
+            $attrs['data'] = $data;
+        }
+
+        if (array_key_exists('class', $attrs)) {
+            $attrs['class'] = preg_split('/[\s]+/', $attrs['class']);
+        }
+
+        echo '<pre>';
+        print_r($attrs);
+        echo '</pre>';
+
+        return $attrs;
+    }
+
+    private function checkIsOurImage(string $src) : Uri|bool {
+        $srcUri = new Uri($src);
+        if (!empty($srcUri->getHost())) {
+            $myUri = new Uri(Uri::root());
+            if ($srcUri->getHost() !== $myUri->getHost()) {
+                return false;
+            }
+        }
+
+        return $srcUri;
+    }
+
+    private function log(string $message, int $prio = Log::DEBUG) : void {
+        Log::add($message, $prio, 'hbn.plugin.content.hbnimages');
     }
 }
