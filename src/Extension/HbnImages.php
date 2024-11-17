@@ -45,6 +45,9 @@ class HbnImages extends CMSPlugin implements SubscriberInterface
     }
 
     private function onContentPrepareArticle($article) : void {
+        echo '<pre>';
+        var_dump($this->params);
+        echo '</pre>';
         $article->text = preg_replace_callback('/<img [^>]*>/',
                                                [$this, 'createArticlePicture'],
                                                $article->text);
@@ -172,10 +175,6 @@ class HbnImages extends CMSPlugin implements SubscriberInterface
         if (array_key_exists('class', $attrs)) {
             $attrs['class'] = preg_split('/[\s]+/', $attrs['class']);
         }
-
-        echo '<pre>';
-        print_r($attrs);
-        echo '</pre>';
 
         return $attrs;
     }
