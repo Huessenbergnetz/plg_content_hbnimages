@@ -13,6 +13,7 @@ if [ -f $TARBALL ]; then
 fi
 
 tar -c -z -f $TARBALL --exclude-vcs \
+    forms \
     language \
     services \
     src \
