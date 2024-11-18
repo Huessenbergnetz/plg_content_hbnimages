@@ -29,11 +29,11 @@
                     <option value="joomla">Joomla</option>
                 </field>
                 <field name="imaginary_host" type="url" default="http://localhost" showon="converter:imaginary"
-                       hint="http://host.example.net" pattern="^.*[^\/]$"
+                       hint="http://host.example.net" pattern="^.*[^\/]$" filter="url"
                        label="PLG_CONTENT_HBNIMAGES_FIELD_IMAGINARY_HOST_LABEL"
                        description="PLG_CONTENT_HBNIMAGES_FIELD_IMAGINARY_HOST_DESC"/>
                 <field name="imaginary_port" type="number" default="9000" showon="converter:imaginary"
-                       min="1" max="65535" hint="9000"
+                       min="1" max="65535" hint="9000" filter="intval"
                        label="PLG_CONTENT_HBNIMAGES_FIELD_IMAGINARY_PORT_LABEL"
                        description="PLG_CONTENT_HBNIMAGES_FIELD_IMAGINARY_PORT_DESC"/>
                 <field name="imaginary_path" type="text" showon="converter:imaginary" pattern="^\/[a-zA-Z0-9_-]+$"
@@ -53,7 +53,7 @@
                             <option vlaue="jpeg">JPEG</option>
                             <option value="webp">WebP</option>
                         </field>
-                        <field name="quality" type="number" default="80" hint="80" min="1" max="100"
+                        <field name="quality" type="number" default="80" hint="80" min="1" max="100" filter="intval"
                                label="PLG_CONTENT_HBNIMAGES_FIELD_TYPES_QUALITY_LABEL"
                                description="PLG_CONTENT_HBNIMAGES_FIELD_TYPES_QUALITY_DESC"/>
                     </form>
