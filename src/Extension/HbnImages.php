@@ -33,27 +33,50 @@ class HbnImages extends CMSPlugin implements SubscriberInterface
             return;
         }
 
+        $cConfigs = $this->params->get('context', null);
+        if (empty($cConfigs)) {
+            return;
+        }
+
         [$context, $article, $params, $page] = array_values($event->getArguments());
+
+        $defaultContext = null;
+        $contextConfig = null;
+
+        foreach ($cConfigs as $cc) {
+            if ($cc->name === $context) {
+                $contextConfig = $cc;
+            } else if ($cc->name === 'default') {
+                $defaultContext = $cc;
+            }
+        }
+
+        if (empty($contextConfig)) {
+            $contextConfig = $defaultContext;
+        }
+
+        if (empty($contextConfig)) {
+            return;
+        }
 
         switch ($context) {
             case 'com_content.article':
-                self::onContentPrepareArticle($article);
+                self::onContentPrepareArticle($article, $contextConfig);
                 return;
             default:
                 return;
         }
     }
 
-    private function onContentPrepareArticle($article) : void {
-        echo '<pre>';
-        var_dump($this->params);
-        echo '</pre>';
+    private function onContentPrepareArticle($article, object $contextConfig) : void {
         $article->text = preg_replace_callback('/<img [^>]*>/',
-                                               [$this, 'createArticlePicture'],
+                                               function ($matches) use ($contextConfig) : string {
+                                                   return self::createArticlePicture($matches, $contextConfig);
+                                               },
                                                $article->text);
     }
 
-    private function createArticlePicture(array $matches) : string {
+    private function createArticlePicture(array $matches, object $contextConfig) : string {
         $img = $matches[0];
 
         $this->log("Found img tag {$img}");
@@ -68,10 +91,43 @@ class HbnImages extends CMSPlugin implements SubscriberInterface
             return $img;
         }
 
+        $imgClasses = array_key_exists('class', $imgAttrs) ? $imgAttrs['class'] : null;
+
+        $defaultClassConfig = null;
+        $classConfig = null;
+        $classConfigs = $contextConfig->classes;
+        foreach($classConfigs as $cc) {
+            if ($cc->name === 'default') {
+                $defaultClassConfig = $cc;
+            } else if (!empty($imgClasses) && array_search($cc->name, $imgClasses) !== false) {
+                $classConfig = $cc;
+            }
+        }
+
+        if (empty($classConfig)) {
+            $classConfig = $defaultClassConfig;
+            if (empty($classConfig)) {
+                return $img;
+            }
+        }
+
+        $widths = get_object_vars($classConfig->mediawidths);
+        $types = get_object_vars($this->params->get('types'));
+
+        $avifSupported = $this->params->get('converter', 'joomla') !== 'imaginary';
+
         $pic = '<picture>';
 
-        $pic .= '<source type="image/webp" srcset="' . $this->getResizedImage($srcUri, 300) . '" media="(min-width: 768px)">';
-        $pic .= '<source type="image/webp" srcset="' . $this->getResizedImage($srcUri, 800) . '" media="(max-width: 767px)">';
+        foreach ($widths as $width) {
+            foreach ($types as $type) {
+                if ($type->type === 'avif' && !$avifSupported) {
+                    continue;
+                }
+                $pic .= '<source' . $this->getType($type->type)
+                      . ' srcset="' . $this->getResizedImage($srcUri, $width->width, $type->type, $type->quality)
+                      . '" media="(' . $width->minmax . '-width: ' . $width->mediawidth . 'px)">';
+            }
+        }
 
         $pic .= $img;
         $pic .= '</picture>';
@@ -79,7 +135,7 @@ class HbnImages extends CMSPlugin implements SubscriberInterface
         return $pic;
     }
 
-    private function getResizedImage(Uri $src, int $width, string $type = 'webp') : string {
+    private function getResizedImage(Uri $src, int $width, string $type = 'webp', int $quality = 80) : string {
         $origFilePath = JPATH_ROOT . '/' . urldecode($src->getPath());
         $cacheFile = 'cache/hbnimages/' . (string)$width . '/' . File::stripExt($src->getPath()) . '.' . $type;
 
@@ -100,15 +156,15 @@ class HbnImages extends CMSPlugin implements SubscriberInterface
         $converter = $this->params->get('converter', 'joomla');
         if ($converter === 'imaginary') {
             $srcUrl = Uri::root() . $src->getPath();
-            $this->getResizedImageImaginary($cacheFilePath, $srcUrl, $width, $type);
+            $this->getResizedImageImaginary($cacheFilePath, $srcUrl, $width, $type, $quality);
         } else {
-           $this->getResizedImageJoomla($cacheFilePath, $origFilePath, $width, $type);
+           $this->getResizedImageJoomla($cacheFilePath, $origFilePath, $width, $type, $quality);
         }
 
         return $cacheFile;
     }
 
-    private function getResizedImageImaginary(string $cacheFilePath, string $srcUrl, int $width, string $type = 'webp') : bool {
+    private function getResizedImageImaginary(string $cacheFilePath, string $srcUrl, int $width, string $type = 'webp', int $quality = 80) : bool {
         $uriStr = $this->params->get('imaginary_host', 'http://localhost')
         . ':' . $this->params->get('imaginary_port', 9000)
         . $this->params->get('imaginary_path', '')
@@ -119,7 +175,7 @@ class HbnImages extends CMSPlugin implements SubscriberInterface
             'width' => $width,
             'type' => $type,
             'url' => $srcUrl,
-            'quality' => 80,
+            'quality' => $quality,
             'stripmeta' => ($this->params->get('stripmetadata', '0') === '0' ? 'false' : 'true')
         ]);
 
@@ -133,7 +189,7 @@ class HbnImages extends CMSPlugin implements SubscriberInterface
         return true;
     }
 
-    private function getResizedImageJoomla(string $cacheFilePath, string $origFilePath, int $width, string $type = 'webp') : bool {
+    private function getResizedImageJoomla(string $cacheFilePath, string $origFilePath, int $width, string $type = 'webp', int $quality = 80) : bool {
         $img = new Image($origFilePath);
 
         if ($img->getWidth() != $width) {
@@ -144,7 +200,23 @@ class HbnImages extends CMSPlugin implements SubscriberInterface
             $img = $img->resize($width, $height);
         }
 
-        return $img->toFile($cacheFilePath, IMAGETYPE_WEBP, ['quality' => 80]);
+        $imgType = IMAGETYPE_WEBP;
+
+        switch ($type) {
+            case 'webp':
+                $imgType = IMAGETYPE_WEBP;
+                break;
+            case 'avif':
+                $imgType = IMAGETYPE_AVIF;
+                break;
+            case 'jpeg':
+                $imgType = IMAGETYPE_JPEG;
+                break;
+            default:
+                return false;
+        }
+
+        return $img->toFile($cacheFilePath, $imgType, ['quality' => $quality]);
     }
 
     private function createCacheDir(string $cacheFilePath) : void {
@@ -210,6 +282,17 @@ class HbnImages extends CMSPlugin implements SubscriberInterface
         }
 
         return $srcUri;
+    }
+
+    private function getType(string $type) : string {
+        switch($type) {
+            case 'webp':
+                return ' type="image/webp"';
+            case 'avif':
+                return ' type="image/avif"';
+            case 'jpeg':
+                return ' type="image/jpeg"';
+        }
     }
 
     private function log(string $message, int $prio = Log::DEBUG) : void {

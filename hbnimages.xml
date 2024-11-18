@@ -74,11 +74,11 @@
                         <field name="name" type="text" hint="com_content.article"
                                label="PLG_CONTENT_HBNIMAGES_FIELD_CONTEXT_NAME_LABEL"
                                description="PLG_CONTENT_HBNIMAGES_FIELD_CONTEXT_NAME_DESC" />
-                        <field name="widths" type="subform" multiple="true"
+                        <field name="classes" type="subform" multiple="true"
                                label="PLG_CONTENT_HBNIMAGES_FIELD_CLASSES_LABEL"
                                description="PLG_CONTENT_HBNIMAGES_FIELD_CLASSES_DESC">
                             <form>
-                                <field name="class" type="text"
+                                <field name="name" type="text"
                                        label="PLG_CONTENT_HBNIMAGES_FIELD_CLASS_LABEL"
                                        description="PLG_CONTENT_HBNIMAGES_FIELD_CLASS_DESC" />
                                 <field name="mediawidths" type="subform" multiple="true"
