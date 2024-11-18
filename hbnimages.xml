@@ -42,22 +42,22 @@
                 <field name="imaginary_token" type="text" showon="converter:imaginary"
                        label="PLG_CONTENT_HBNIMAGES_FIELD_IMAGINARY_TOKEN_LABEL"
                        description="PLG_CONTENT_HBNIMAGES_FIELD_IMAGINARY_TOKEN_DESC"/>
-                <field name="types" type="list" default="webp" multiple="true"
+                <field name="types" type="subform" multiple="true" min="1" max="3"
                        label="PLG_CONTENT_HBNIMAGES_FIELD_TYPES_LABEL"
                        description="PLG_CONTENT_HBNIMAGES_FIELD_TYPES_DESC">
-                    <option value="webp">WebP</option>
-                    <option value="avif">AVIF</option>
-                    <option value="jpeg">JPEG</option>
+                    <form>
+                        <field name="type" type="list" default="webp"
+                               label="PLG_CONTENT_HBNIMAGES_FIELD_TYPES_TYPE_LABEL"
+                               description="PLG_CONTENT_HBNIMAGES_FIELD_TYPES_TYPE_DESC">
+                            <option value="avif">AVIF</option>
+                            <option vlaue="jpeg">JPEG</option>
+                            <option value="webp">WebP</option>
+                        </field>
+                        <field name="quality" type="number" default="80" hint="80" min="1" max="100"
+                               label="PLG_CONTENT_HBNIMAGES_FIELD_TYPES_QUALITY_LABEL"
+                               description="PLG_CONTENT_HBNIMAGES_FIELD_TYPES_QUALITY_DESC"/>
+                    </form>
                 </field>
-                <field name="avif_quality" type="number" default="70" hint="70" min="1" max="100"
-                       label="PLG_CONTENT_HBNIMAGES_FIELD_AFIV_QUALITY_LABEL"
-                       description="PLG_CONTENT_HBNIMAGES_FIELD_AFIV_QUALITY_DESC"/>
-                <field name="webp_quality" type="number" default="80" hint="80" min="1" max="100"
-                       label="PLG_CONTENT_HBNIMAGES_FIELD_WEBP_QUALITY_LABEL"
-                       description="PLG_CONTENT_HBNIMAGES_FIELD_WEBP_QUALITY_DESC"/>
-                <field name="jpeg_quality" type="number" default="85" hint="85" min="1" max="100"
-                       label="PLG_CONTENT_HBNIMAGES_FIELD_JPEG_QUALITY_LABEL"
-                       description="PLG_CONTENT_HBNIMAGES_FIELD_JPEG_QUALITY_DESC"/>
                 <field name="stripmetadata" type="radio" default="0"
                        label="PLG_CONTENT_HBNIMAGES_FIELD_STRIPMETADATA_LABEL"
                        description="PLG_CONTENT_HBNIMAGES_FIELD_STRIPMETADATA_DESC"
