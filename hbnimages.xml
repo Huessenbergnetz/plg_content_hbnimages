@@ -71,20 +71,20 @@
                        label="PLG_CONTENT_HBNIMAGES_FIELD_CONTEXT_LABEL"
                        description="PLG_CONTENT_HBNIMAGES_FIELD_CONTEXT_DESC">
                     <form>
-                        <field name="name" type="text"
+                        <field name="name" type="text" hint="com_content.article"
                                label="PLG_CONTENT_HBNIMAGES_FIELD_CONTEXT_NAME_LABEL"
                                description="PLG_CONTENT_HBNIMAGES_FIELD_CONTEXT_NAME_DESC" />
                         <field name="widths" type="subform" multiple="true"
-                               label="PLG_CONTENT_HBNIMAGES_FIELD_WIDTHS_LABEL"
-                               description="PLG_CONTENT_HBNIMAGES_FIELD_WIDTH_DESC">
+                               label="PLG_CONTENT_HBNIMAGES_FIELD_CLASSES_LABEL"
+                               description="PLG_CONTENT_HBNIMAGES_FIELD_CLASSES_DESC">
                             <form>
                                 <field name="class" type="text"
                                        label="PLG_CONTENT_HBNIMAGES_FIELD_CLASS_LABEL"
                                        description="PLG_CONTENT_HBNIMAGES_FIELD_CLASS_DESC" />
                                 <field name="mediawidths" type="subform" multiple="true"
                                        formsource="plugins/content/hbnimages/forms/mediawidths.xml"
-                                       label="PLG_CONTENT_HBNIMAGES_FIELD_MEDIAWIDTHS_LABEL"
-                                       description="PLG_CONTENT_HBNINAMGES_FIELD_MEDIAWIDTHS_DESC" />
+                                       label="PLG_CONTENT_HBNIMAGES_FIELD_WIDTHS_LABEL"
+                                       description="PLG_CONTENT_HBNINAMGES_FIELD_WIDTHS_DESC" />
                             </form>
                         </field>
                     </form>

@@ -1,9 +1,14 @@
 <form>
-    <field name="width" type="number"
+    <field name="width" type="number" filter="intval"
            label="PLG_CONTENT_HBNIMAGES_FIELD_IMAGEWIDTH_LABEL"
            description="PLG_CONTENT_HBNIMAGES_FIELD_IMAGEWIDTH_DESC" />
-    <field name="minmax" type="list">
-        <option value="min">min</option>
-        <option value="max">max</option>
+    <field name="minmax" type="list"
+           label="PLG_CONTENT_HBNIMAGES_FIELD_MINMAX_LABEL"
+           description="PLG_CONTENT_HBNIMAGES_FIELD_MINMAX_DESC">
+        <option value="min">PLG_CONTENT_HBNIMAGES_FIELD_MINMAX_VAL_MIN</option>
+        <option value="max">PLG_CONTENT_HBNIMAGES_FIELD_MINMAX_VAL_MAX</option>
     </field>
+    <field name="mediawidth" type="number" filter="intval"
+           label="PLG_CONTENT_HBNIMAGES_FIELD_MEDIAWIDTH_LABEL"
+           description="PLG_CONTENT_HBNIMAGES_FIELD_MEDIAWIDTH_DESC" />
 </form>
