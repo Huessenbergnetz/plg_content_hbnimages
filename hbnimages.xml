@@ -29,14 +29,14 @@
                     <option value="joomla">Joomla</option>
                 </field>
                 <field name="imaginary_host" type="url" default="http://localhost" showon="converter:imaginary"
-                       hint="http://host.example.net"
+                       hint="http://host.example.net" pattern="^.*[^\/]$"
                        label="PLG_CONTENT_HBNIMAGES_FIELD_IMAGINARY_HOST_LABEL"
                        description="PLG_CONTENT_HBNIMAGES_FIELD_IMAGINARY_HOST_DESC"/>
                 <field name="imaginary_port" type="number" default="9000" showon="converter:imaginary"
                        min="1" max="65535" hint="9000"
                        label="PLG_CONTENT_HBNIMAGES_FIELD_IMAGINARY_PORT_LABEL"
                        description="PLG_CONTENT_HBNIMAGES_FIELD_IMAGINARY_PORT_DESC"/>
-                <field name="imaginary_path" type="text" default="/" showon="converter:imaginary" hint="/"
+                <field name="imaginary_path" type="text" showon="converter:imaginary" pattern="^\/[a-zA-Z0-9_-]+$"
                        label="PLG_CONTENT_HBNIMAGES_FIELD_IMAGINARY_PATH_LABEL"
                        description="PLG_CONTENT_HBNIMAGES_FIELD_IMAGINARY_PATH_DESC"/>
                 <field name="imaginary_token" type="text" showon="converter:imaginary"
@@ -58,6 +58,13 @@
                 <field name="jpeg_quality" type="number" default="85" hint="85" min="1" max="100"
                        label="PLG_CONTENT_HBNIMAGES_FIELD_JPEG_QUALITY_LABEL"
                        description="PLG_CONTENT_HBNIMAGES_FIELD_JPEG_QUALITY_DESC"/>
+                <field name="stripmetadata" type="radio" default="0"
+                       label="PLG_CONTENT_HBNIMAGES_FIELD_STRIPMETADATA_LABEL"
+                       description="PLG_CONTENT_HBNIMAGES_FIELD_STRIPMETADATA_DESC"
+                       layout="joomla.form.field.radio.switcher">
+                    <option value="0">JNo</option>
+                    <option value="1">JYes</option>
+                </field>
             </fieldset>
             <fieldset name="contextoptions">
                 <field name="context" type="subform" multiple="true"

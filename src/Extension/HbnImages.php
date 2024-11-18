@@ -87,8 +87,12 @@ class HbnImages extends CMSPlugin implements SubscriberInterface
 
         $cacheFilePath = JPATH_ROOT . '/' . urldecode($cacheFile);
 
+        $this->log("Trying to get cache file for {$origFilePath}");
+
         if (file_exists($cacheFilePath)) {
-            if (filemtime($cacheFilePath) > filemtime($origFilePath)) {
+            $this->log("Cache file {$cacheFilePath} already exists");
+            if (filemtime($cacheFilePath) >= filemtime($origFilePath)) {
+                $this->log("Cache file is newer");
                 return $cacheFile;
             }
         }
@@ -101,8 +105,22 @@ class HbnImages extends CMSPlugin implements SubscriberInterface
     }
 
     private function getResizedImageImaginary(string $cacheFilePath, string $srcUrl, int $width, string $type = 'webp') : bool {
-        $uri = new Uri('http://localhost:8088/resize');
-        $uri->setQuery(['width' => $width, 'type' => $type, 'url' => $srcUrl, 'quality' => 80]);
+        $uriPath = $this->params->get('imaginary_path', '');
+        if (empty($uriPath)) {
+            $uriPath = '/';
+        }
+        $uriPort = $this->params->get('imaginary_port', 9000);
+        $uriStr = $this->params->get('imaginary_host', 'http://localhost') . ':' . $this->params->get('imaginary_port', 9000) . $uriPath = $this->params->get('imaginary_path', '') . '/resize';
+        $uri = new Uri($uriStr);
+        $uri->setQuery([
+            'width' => $width,
+            'type' => $type,
+            'url' => $srcUrl,
+            'quality' => 80,
+            'stripmeta' => ($this->params->get('stripmetadata', '0') === '0' ? 'false' : 'true')
+        ]);
+
+        $this->log("Trying to generate resized image with Imaginary: {$uri->toString()}");
 
         $http = HttpFactory::getHttp();
         $response = $http->get($uri);
