@@ -98,6 +98,7 @@ class HbnImages extends CMSPlugin implements SubscriberInterface
         }
 
         $srcUrl = Uri::root() . $src->getPath();
+
         $this->getResizedImageImaginary($cacheFilePath, $srcUrl, $width, $type);
         // $this->getResizedImageJoomla($cacheFilePath, $origFilePath, $width, $type);
 
@@ -105,12 +106,7 @@ class HbnImages extends CMSPlugin implements SubscriberInterface
     }
 
     private function getResizedImageImaginary(string $cacheFilePath, string $srcUrl, int $width, string $type = 'webp') : bool {
-        $uriPath = $this->params->get('imaginary_path', '');
-        if (empty($uriPath)) {
-            $uriPath = '/';
-        }
-        $uriPort = $this->params->get('imaginary_port', 9000);
-        $uriStr = $this->params->get('imaginary_host', 'http://localhost') . ':' . $this->params->get('imaginary_port', 9000) . $uriPath = $this->params->get('imaginary_path', '') . '/resize';
+        $uriStr = $this->params->get('imaginary_host', 'http://localhost') . ':' . $this->params->get('imaginary_port', 9000) . $this->params->get('imaginary_path', '') . '/resize';
         $uri = new Uri($uriStr);
         $uri->setQuery([
             'width' => $width,
