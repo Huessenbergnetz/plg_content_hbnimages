@@ -27,6 +27,7 @@
                        description="PLG_CONTENT_HBNIMAGES_FIELD_CONVERTER_DESC">
                     <option value="imaginary">Imaginary</option>
                     <option value="joomla">Joomla</option>
+                    <option value="imagick">Imagick</option>
                 </field>
                 <field name="imaginary_host" type="url" default="http://localhost" showon="converter:imaginary"
                        hint="http://host.example.net" pattern="^.*[^\/]$" filter="url"

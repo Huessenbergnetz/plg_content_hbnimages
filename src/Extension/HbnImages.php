@@ -157,6 +157,8 @@ class HbnImages extends CMSPlugin implements SubscriberInterface
         if ($converter === 'imaginary') {
             $srcUrl = Uri::root() . $src->getPath();
             $this->getResizedImageImaginary($cacheFilePath, $srcUrl, $width, $type, $quality);
+        } else if ($converter === 'imagick') {
+            $this->getResizedImageImagick($cacheFilePath, $origFilePath, $width, $quality);
         } else {
            $this->getResizedImageJoomla($cacheFilePath, $origFilePath, $width, $type, $quality);
         }
@@ -217,6 +219,36 @@ class HbnImages extends CMSPlugin implements SubscriberInterface
         }
 
         return $img->toFile($cacheFilePath, $imgType, ['quality' => $quality]);
+    }
+
+    private function getResizedImageImagick(string $cacheFilePath, string $origFilePath, int $width, int $quality = 80) : bool {
+        $img = new \Imagick();
+
+        if (!$img->readImage($origFilePath)) {
+            return false;
+        }
+
+        if (!$img->resizeImage($width, 0, \Imagick::FILTER_LANCZOS, 1)) {
+            $img->clear();
+            $img->destroy();
+            return false;
+        }
+
+        if (!$img->setImageCompressionQuality($quality)) {
+            $img->clear();
+            $img->destroy();
+            return false;
+        }
+
+        if (!$img->writeImage($cacheFilePath)) {
+            $img->clear();
+            $img->destroy();
+            return false;
+        }
+
+        $img->clear();
+        $img->destroy();
+        return true;
     }
 
     private function createCacheDir(string $cacheFilePath) : void {
