@@ -22,6 +22,26 @@
     <config>
         <fields name="params">
             <fieldset name="basic">
+                <field name="converter" type="list" default="joomla"
+                       label="PLG_CONTENT_HBNIMAGES_FIELD_CONVERTER_LABEL"
+                       description="PLG_CONTENT_HBNIMAGES_FIELD_CONVERTER_DESC">
+                    <option value="imaginary">Imaginary</option>
+                    <option value="joomla">Joomla</option>
+                </field>
+                <field name="imaginary_host" type="url" default="http://localhost" showon="converter:imaginary"
+                       hint="http://host.example.net"
+                       label="PLG_CONTENT_HBNIMAGES_FIELD_IMAGINARY_HOST_LABEL"
+                       description="PLG_CONTENT_HBNIMAGES_FIELD_IMAGINARY_HOST_DESC"/>
+                <field name="imaginary_port" type="number" default="9000" showon="converter:imaginary"
+                       min="1" max="65535" hint="9000"
+                       label="PLG_CONTENT_HBNIMAGES_FIELD_IMAGINARY_PORT_LABEL"
+                       description="PLG_CONTENT_HBNIMAGES_FIELD_IMAGINARY_PORT_DESC"/>
+                <field name="imaginary_path" type="text" default="/" showon="converter:imaginary" hint="/"
+                       label="PLG_CONTENT_HBNIMAGES_FIELD_IMAGINARY_PATH_LABEL"
+                       description="PLG_CONTENT_HBNIMAGES_FIELD_IMAGINARY_PATH_DESC"/>
+                <field name="imaginary_token" type="text" showon="converter:imaginary"
+                       label="PLG_CONTENT_HBNIMAGES_FIELD_IMAGINARY_TOKEN_LABEL"
+                       description="PLG_CONTENT_HBNIMAGES_FIELD_IMAGINARY_TOKEN_DESC"/>
                 <field name="types" type="list" default="webp" multiple="true"
                        label="PLG_CONTENT_HBNIMAGES_FIELD_TYPES_LABEL"
                        description="PLG_CONTENT_HBNIMAGES_FIELD_TYPES_DESC">
@@ -29,6 +49,15 @@
                     <option value="avif">AVIF</option>
                     <option value="jpeg">JPEG</option>
                 </field>
+                <field name="avif_quality" type="number" default="70" hint="70" min="1" max="100"
+                       label="PLG_CONTENT_HBNIMAGES_FIELD_AFIV_QUALITY_LABEL"
+                       description="PLG_CONTENT_HBNIMAGES_FIELD_AFIV_QUALITY_DESC"/>
+                <field name="webp_quality" type="number" default="80" hint="80" min="1" max="100"
+                       label="PLG_CONTENT_HBNIMAGES_FIELD_WEBP_QUALITY_LABEL"
+                       description="PLG_CONTENT_HBNIMAGES_FIELD_WEBP_QUALITY_DESC"/>
+                <field name="jpeg_quality" type="number" default="85" hint="85" min="1" max="100"
+                       label="PLG_CONTENT_HBNIMAGES_FIELD_JPEG_QUALITY_LABEL"
+                       description="PLG_CONTENT_HBNIMAGES_FIELD_JPEG_QUALITY_DESC"/>
             </fieldset>
             <fieldset name="contextoptions">
                 <field name="context" type="subform" multiple="true"
