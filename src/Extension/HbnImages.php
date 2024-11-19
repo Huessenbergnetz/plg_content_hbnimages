@@ -371,6 +371,8 @@ class HbnImages extends CMSPlugin implements SubscriberInterface
         switch ($lightbox) {
             case 'link':
                 return $this->getLinkLightbox($src, $origWidth, $origHeight);
+            case 'jcemediabox2':
+                return $this->getJceMediaBox2($src, $origWidth, $origHeight);
             default:
                 return '';
         }
@@ -378,17 +380,21 @@ class HbnImages extends CMSPlugin implements SubscriberInterface
 
     private function getLinkLightbox(Uri $src, int $origWidth, int $origHeight) : string {
         $srcStr = '';
-        if ($this->params->get('link_resize', 0) === 1) {
+        if ($this->params->get('lightbox_resize', 0) === 1) {
             $orientation = $this->getOrientation($origWidth, $origHeight);
 
             if ($orientation == HbnImages::ORIENTATION_PORTRAIT) {
-                $targetHeight = $this->params->get('link_height', 0);
+                $targetHeight = $this->params->get('lightbox_height', 0);
                 $targetHeight = $targetHeight > 0 ? $targetHeight : $origHeight;
-                $srcStr = $this->getResizedImage($src, 0, $targetHeight, 'webp', 80);
+                $srcStr = $this->getResizedImage($src, 0, $targetHeight,
+                                                 $this->params->get('lightbox_type', 'webp'),
+                                                 $this->params->get('lightbox_quality', 80));
             } else {
-                $targetWidth = $this->params->get('link_width', 0);
+                $targetWidth = $this->params->get('lightbox_width', 0);
                 $targetWidth = $targetWidth > 0 ? $targetWidth : $origWidth;
-                $srcStr = $this->getResizedImage($src, $targetWidth, 0, 'webp', 80);
+                $srcStr = $this->getResizedImage($src, $targetWidth, 0,
+                                                 $this->params->get('lightbox_type', 'webp'),
+                                                 $this->params->get('lightbox_quality', 80));
             }
         }
 
@@ -397,6 +403,38 @@ class HbnImages extends CMSPlugin implements SubscriberInterface
         }
 
         return '<a href="' . $srcStr . '">';
+    }
+
+    private function getJceMediaBox2(Uri $src, int $origWidth, int $origHeight) : string {
+        $srcStr = '';
+        if ($this->params->get('lightbox_resize', 0) === 1) {
+            $orientation = $this->getOrientation($origWidth, $origHeight);
+
+            if ($orientation == HbnImages::ORIENTATION_PORTRAIT) {
+                $targetHeight = $this->params->get('lightbox_height', 0);
+                $targetHeight = $targetHeight > 0 ? $targetHeight : $origHeight;
+                $srcStr = $this->getResizedImage($src, 0, $targetHeight,
+                                                 $this->params->get('lightbox_type', 'webp'),
+                                                 $this->params->get('lightbox_quality', 80));
+            } else {
+                $targetWidth = $this->params->get('lightbox_width', 0);
+                $targetWidth = $targetWidth > 0 ? $targetWidth : $origWidth;
+                $srcStr = $this->getResizedImage($src, $targetWidth, 0,
+                                                 $this->params->get('lightbox_type', 'webp'),
+                                                 $this->params->get('lightbox_quality', 80));
+            }
+        }
+
+        if (empty($srcStr)) {
+            $srcStr = $src->toString();
+        }
+
+        $gallery = '';
+        if ($this->params->get('lightbox_gallery', 0) !== 0) {
+            $gallery = ' data-mediabox-group="hbnimages-found-gallery"';
+        }
+
+        return '<a class="jcepopup" href="' . $srcStr . '"' . $gallery . '>';
     }
 
     private function createCacheDir(string $cacheFilePath) : bool {

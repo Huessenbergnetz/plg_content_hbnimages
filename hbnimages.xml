@@ -108,23 +108,44 @@
                     <option value="none">PLG_CONTENT_HBNIMAGES_FIELD_LIGHTBOX_VAL_NONE</option>
                     <option value="link">PLG_CONTENT_HBNIMAGES_FIELD_LIGHTBOX_VAL_LINK</option>
                     <option value="glightbox">GLightbox</option>
+                    <option value="jcemediabox2">JCE MediaBox 2</option>
                 </field>
                 <field name="link_header" type="note" showon="lightbox:link"
                        label="PLG_CONTENT_HBNIMAGES_FIELD_LINK_HEADER_LABEL"
                        description="PLG_CONTENT_HBNIMAGES_FIELD_LINK_HEADER_DESC" />
-                <field name="link_resize" type="radio" default="0" filter="intval" showon="lightbox:link"
-                       label="PLG_CONTENT_HBNIMAGES_FIELD_LINK_RESIZE_LABEL"
-                       description="PLG_CONTENT_HBNIMAGES_FIELD_LINK_RESIZE_DESC"
+                <field name="jcemediabox2_header" type="note" showon="lightbox:jcemediabox2"
+                       label="PLG_CONTENT_HBNIMAGES_FIELD_JCEMEDIABOX_HEADER_LABEL"
+                       description="PLG_CONTENT_HBNIMAGES_FIELD_JCEMEDIABOX_HEADER_DESC" />
+                <field name="lightbox_gallery" type="radio" default="0" filter="intval" showon="lightbox!:none"
+                       label="PLG_CONTENT_HBNIMAGES_FIELD_LIGHTBOX_GALLERY_LABEL"
+                       description="PLG_CONTENT_HBNIMAGES_FIELD_LIGHTBOX_GALLERY_DESC"
                        layout="joomla.form.field.radio.switcher">
                     <option value="0">JNo</option>
                     <option value="1">JYes</option>
                 </field>
-                <field name="link_width" type="number" min="0" filter="intval" default="0" showon="lightbox:link[AND]link_resize:1"
-                       label="PLG_CONTENT_HBNIMAGES_FIELD_LINK_WIDTH_LABEL"
-                       description="PLG_CONTENT_HBNIMAGES_FIELD_LINK_WIDTH_DESC" />
-                <field name="link_height" type="number" min="0" filter="intval" default="0" showon="lightbox:link[AND]link_resize:1"
-                       label="PLG_CONTENT_HBNIMAGES_FIELD_LINK_HEIGHT_LABEL"
-                       description="PLG_CONTENT_HBNIMAGES_FIELD_LINK_HEIGHT_DESC" />
+                <field name="lightbox_resize" type="radio" default="0" filter="intval" showon="lightbox!:none"
+                       label="PLG_CONTENT_HBNIMAGES_FIELD_LIGHTBOX_RESIZE_LABEL"
+                       description="PLG_CONTENT_HBNIMAGES_FIELD_LIGHTBOX_RESIZE_DESC"
+                       layout="joomla.form.field.radio.switcher">
+                    <option value="0">JNo</option>
+                    <option value="1">JYes</option>
+                </field>
+                <field name="lightbox_type" type="list" default="webp" showon="lightbox!:none[AND]lightbox_resize:1"
+                       label="PLG_CONTENT_HBNIMAGES_FIELD_LIGHTBOX_TYPE_LABEL"
+                       description="PLG_CONTENT_HBNIMAGES_FIELD_LIGHTBOX_TYPE_DESC">
+                    <option value="avif">AVIF</option>
+                    <option value="webp">WebP</option>
+                    <option value="jpeg">JPEG</option>
+                </field>
+                <field name="lightbox_quality" type="number" min="0" max="100" default="80" filter="intval" showon="lightbox!:none[AND]lightbox_resize:1"
+                       label="PLG_CONTENT_HBNIMAGES_FIELD_LIGHTBOX_QUALITY_LABEL"
+                       description="PLG_CONTENT_HBNIMAGES_FIELD_LIGHTBOX_QUALITY_DESC" />
+                <field name="lightbox_width" type="number" min="0" filter="intval" default="0" showon="lightbox!:none[AND]lightbox!:glightbox[AND]lightbox_resize:1"
+                       label="PLG_CONTENT_HBNIMAGES_FIELD_LIGHTBOX_WIDTH_LABEL"
+                       description="PLG_CONTENT_HBNIMAGES_FIELD_LIGHTBOX_WIDTH_DESC" />
+                <field name="lightbox_height" type="number" min="0" filter="intval" default="0" showon="lightbox!:none[AND]lightbox!:glightbox[AND]lightbox_resize:1"
+                       label="PLG_CONTENT_HBNIMAGES_FIELD_LIGHTBOX_HEIGHT_LABEL"
+                       description="PLG_CONTENT_HBNIMAGES_FIELD_LIGHTBOX_HEIGHT_DESC" />
             </fieldset>
         </fields>
     </config>
