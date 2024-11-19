@@ -151,11 +151,13 @@ class HbnImages extends CMSPlugin implements SubscriberInterface
 
         $cacheFilePath = JPATH_ROOT . '/' . urldecode($cacheFile);
 
-        $this->log("Trying to get cache file for {$origFilePath}");
+        $this->log("Trying to get {$type} cache file for {$origFilePath}");
 
         if (file_exists($cacheFilePath)) {
-            $this->log("Cache file {$cacheFilePath} already exists");
-            if (filemtime($cacheFilePath) >= filemtime($origFilePath)) {
+            $origMTime = filemtime($origFilePath);
+            $cacheMTime = filemtime($cacheFilePath);
+            $this->log("Cache file {$cacheFilePath} already exists. Orig mTime: {$origMTime}, Cache mTime: {$cacheMTime}");
+            if ($cacheMTime >= $origMTime) {
                 $this->log("Cache file is newer");
                 return $cacheFile;
             }
@@ -226,6 +228,8 @@ class HbnImages extends CMSPlugin implements SubscriberInterface
     }
 
     private function getResizedImageJoomla(string $cacheFilePath, string $origFilePath, int $width, string $type = 'webp', int $quality = 80) : bool {
+        $this->log("JImage: Trying to get resized image: {$origFilePath}");
+
         try {
             $img = new Image($origFilePath);
         } catch (\Exception $ex) {
@@ -276,6 +280,8 @@ class HbnImages extends CMSPlugin implements SubscriberInterface
     }
 
     private function getResizedImageImagick(string $cacheFilePath, string $origFilePath, int $width, int $quality = 80) : bool {
+        $this->log("Imagick: Trying to get resized image: {$origFilePath}");
+
         if (!extension_loaded('imagick')) {
             $this->log('Imagick: extension not loaded', Log::WARNING);
             return false;
