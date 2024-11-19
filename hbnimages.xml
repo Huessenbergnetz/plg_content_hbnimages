@@ -112,6 +112,19 @@
                 <field name="link_header" type="note" showon="lightbox:link"
                        label="PLG_CONTENT_HBNIMAGES_FIELD_LINK_HEADER_LABEL"
                        description="PLG_CONTENT_HBNIMAGES_FIELD_LINK_HEADER_DESC" />
+                <field name="link_resize" type="radio" default="0" filter="intval" showon="lightbox:link"
+                       label="PLG_CONTENT_HBNIMAGES_FIELD_LINK_RESIZE_LABEL"
+                       description="PLG_CONTENT_HBNIMAGES_FIELD_LINK_RESIZE_DESC"
+                       layout="joomla.form.field.radio.switcher">
+                    <option value="0">JNo</option>
+                    <option value="1">JYes</option>
+                </field>
+                <field name="link_width" type="number" min="0" filter="intval" default="0" showon="lightbox:link[AND]link_resize:1"
+                       label="PLG_CONTENT_HBNIMAGES_FIELD_LINK_WIDTH_LABEL"
+                       description="PLG_CONTENT_HBNIMAGES_FIELD_LINK_WIDTH_DESC" />
+                <field name="link_height" type="number" min="0" filter="intval" default="0" showon="lightbox:link[AND]link_resize:1"
+                       label="PLG_CONTENT_HBNIMAGES_FIELD_LINK_HEIGHT_LABEL"
+                       description="PLG_CONTENT_HBNIMAGES_FIELD_LINK_HEIGHT_DESC" />
             </fieldset>
         </fields>
     </config>
