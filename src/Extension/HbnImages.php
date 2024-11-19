@@ -118,7 +118,9 @@ class HbnImages extends CMSPlugin implements SubscriberInterface
 
         $avifSupported = $this->params->get('converter', 'joomla') !== 'imaginary';
 
-        $pic = '<picture>';
+        $lb = $this->getLightbox($srcUri);
+        $pic = $lb;
+        $pic .= '<picture>';
 
         foreach ($widths as $width) {
             foreach ($types as $type) {
@@ -137,13 +139,16 @@ class HbnImages extends CMSPlugin implements SubscriberInterface
 
         $pic .= $img;
         $pic .= '</picture>';
+        if (!empty($lb)) {
+            $pic .= '</a>';
+        }
 
         return $pic;
     }
 
     private function getResizedImage(Uri $src, int $width, string $type = 'webp', int $quality = 80) : string {
         $origFilePath = JPATH_ROOT . '/' . urldecode($src->getPath());
-        $cacheFile = 'cache/hbnimages/' . (string)$width . '/' . File::stripExt($src->getPath()) . '.' . $type;
+        $cacheFile = 'images/hbnimages/' . (string)$width . '/' . File::stripExt($src->getPath()) . '.' . $type;
 
         if (!$this->createCacheDir(urldecode($cacheFile))) {
             return '';
@@ -328,6 +333,20 @@ class HbnImages extends CMSPlugin implements SubscriberInterface
         $img->clear();
         $img->destroy();
         return true;
+    }
+
+    private function getLightbox(Uri $src) : string {
+        $lightbox = $this->params->get('lightbox', 'none');
+        switch ($lightbox) {
+            case 'link':
+                return $this->getLinkLightbox($src);
+            default:
+                return '';
+        }
+    }
+
+    private function getLinkLightbox(Uri $src) : string {
+        return '<a href="' . $src->toString() . '">';
     }
 
     private function createCacheDir(string $cacheFilePath) : bool {
