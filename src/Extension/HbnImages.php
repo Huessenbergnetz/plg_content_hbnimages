@@ -61,9 +61,11 @@ class HbnImages extends CMSPlugin implements SubscriberInterface
 
         switch ($context) {
             case 'com_content.article':
+            case 'com_content.featured':
                 self::onContentPrepareArticle($article, $contextConfig);
                 return;
             default:
+                $this->log("No fitting configuration found. Leaving img tag as it is.");
                 return;
         }
     }
@@ -71,12 +73,12 @@ class HbnImages extends CMSPlugin implements SubscriberInterface
     private function onContentPrepareArticle($article, object $contextConfig) : void {
         $article->text = preg_replace_callback('/<img [^>]*>/',
                                                function ($matches) use ($contextConfig) : string {
-                                                   return self::createArticlePicture($matches, $contextConfig);
+                                                   return self::createPicture($matches, $contextConfig);
                                                },
                                                $article->text);
     }
 
-    private function createArticlePicture(array $matches, object $contextConfig) : string {
+    private function createPicture(array $matches, object $contextConfig) : string {
         $img = $matches[0];
 
         $this->log("Found img tag {$img}");
@@ -123,8 +125,12 @@ class HbnImages extends CMSPlugin implements SubscriberInterface
                 if ($type->type === 'avif' && !$avifSupported) {
                     continue;
                 }
+                $srcStr = $this->getResizedImage($srcUri, $width->width, $type->type, $type->quality);
+                if (empty($srcStr)) {
+                    return $img;
+                }
                 $pic .= '<source' . $this->getType($type->type)
-                      . ' srcset="' . $this->getResizedImage($srcUri, $width->width, $type->type, $type->quality)
+                      . ' srcset="' . $srcStr
                       . '" media="(' . $width->minmax . '-width: ' . $width->mediawidth . 'px)">';
             }
         }
@@ -139,7 +145,9 @@ class HbnImages extends CMSPlugin implements SubscriberInterface
         $origFilePath = JPATH_ROOT . '/' . urldecode($src->getPath());
         $cacheFile = 'cache/hbnimages/' . (string)$width . '/' . File::stripExt($src->getPath()) . '.' . $type;
 
-        $this->createCacheDir(urldecode($cacheFile));
+        if (!$this->createCacheDir(urldecode($cacheFile))) {
+            return '';
+        }
 
         $cacheFilePath = JPATH_ROOT . '/' . urldecode($cacheFile);
 
@@ -156,9 +164,19 @@ class HbnImages extends CMSPlugin implements SubscriberInterface
         $converter = $this->params->get('converter', 'joomla');
         if ($converter === 'imaginary') {
             $srcUrl = Uri::root() . $src->getPath();
-            $this->getResizedImageImaginary($cacheFilePath, $srcUrl, $width, $type, $quality);
+            if (!$this->getResizedImageImaginary($cacheFilePath, $srcUrl, $width, $type, $quality)) {
+                if (!$this->getResizedImageImagick($cacheFilePath, $origFilePath, $width, $quality)) {
+                    if (!$this->getResizedImageJoomla($cacheFilePath, $origFilePath, $width, $type, $quality)) {
+                        return '';
+                    }
+                }
+            }
         } else if ($converter === 'imagick') {
-            $this->getResizedImageImagick($cacheFilePath, $origFilePath, $width, $quality);
+            if (!$this->getResizedImageImagick($cacheFilePath, $origFilePath, $width, $quality)) {
+                if (!$this->getResizedImageJoomla($cacheFilePath, $origFilePath, $width, $type, $quality)) {
+                    return '';
+                }
+            }
         } else {
            $this->getResizedImageJoomla($cacheFilePath, $origFilePath, $width, $type, $quality);
         }
@@ -178,28 +196,54 @@ class HbnImages extends CMSPlugin implements SubscriberInterface
             'type' => $type,
             'url' => $srcUrl,
             'quality' => $quality,
-            'stripmeta' => ($this->params->get('stripmetadata', '0') === '0' ? 'false' : 'true')
+            'stripmeta' => ($this->params->get('stripmetadata', 0) === 0 ? 'false' : 'true')
         ]);
 
-        $this->log("Trying to generate resized image with Imaginary: {$uri->toString()}");
+        $this->log("Imaginary: Trying to generate resized image: {$uri->toString()}");
 
-        $http = HttpFactory::getHttp();
-        $response = $http->get($uri);
+        try {
+            $http = HttpFactory::getHttp();
+        } catch (\Exception $ex) {
+            $this->log("Imaginary: Failed to get Joomla HTTP instance: {$ex->getMessage()}", Log::ERROR);
+            return false;
+        }
 
-        File::write($cacheFilePath, $response->body);
+        try {
+            $response = $http->get($uri);
+        } catch (\Exception $ex) {
+            $this->log("Imaginary: Failed to get response: {$ex->getMessage()}", Log::ERROR);
+            return false;
+        }
+
+        try {
+            File::write($cacheFilePath, $response->body);
+        } catch (\Exception $ex) {
+            $this->log("Imaginary: Failed to write cache file {$cacheFilePath}: {$ex->getMessage()}", Log::ERROR);
+            return false;
+        }
 
         return true;
     }
 
     private function getResizedImageJoomla(string $cacheFilePath, string $origFilePath, int $width, string $type = 'webp', int $quality = 80) : bool {
-        $img = new Image($origFilePath);
+        try {
+            $img = new Image($origFilePath);
+        } catch (\Exception $ex) {
+            $this->log("JImage: Failed to load image {$origFilePath}: {$ex->getMessage()}", Log::ERROR);
+            return false;
+        }
 
         if ($img->getWidth() != $width) {
             $origWidth = $img->getWidth();
             $origHeight = $img->getHeight();
             $ratio = $width / $origWidth;
             $height = (int)round($origHeight * $ratio);
-            $img = $img->resize($width, $height);
+            try {
+                $img = $img->resize($width, $height);
+            } catch (\Exception $ex) {
+                $this->log("JImage: Failed to resize image {$origFilePath}: {$ex->getMessage()}", Log::ERROR);
+                return false;
+            }
         }
 
         $imgType = IMAGETYPE_WEBP;
@@ -215,32 +259,61 @@ class HbnImages extends CMSPlugin implements SubscriberInterface
                 $imgType = IMAGETYPE_JPEG;
                 break;
             default:
+                $this->log("JImage: Invalid file type: {$type}", Log::ERROR);
                 return false;
         }
 
-        return $img->toFile($cacheFilePath, $imgType, ['quality' => $quality]);
+        $res = false;
+
+        try {
+            $res = $img->toFile($cacheFilePath, $imgType, ['quality' => $quality]);
+        } catch (\Exception $ex) {
+            $this->log("JImage: Failed to write image {$cacheFilePath}: {$ex->getMessage()}", Log::ERROR);
+            return false;
+        }
+
+        return $res;
     }
 
     private function getResizedImageImagick(string $cacheFilePath, string $origFilePath, int $width, int $quality = 80) : bool {
-        $img = new \Imagick();
+        if (!extension_loaded('imagick')) {
+            $this->log('Imagick: extension not loaded', Log::WARNING);
+            return false;
+        }
+
+        try {
+            $img = new \Imagick();
+        } catch (\Exception $ex) {
+            $this->log("Imagick: Failed to get new object: {$ex->getMessage()}", Log::ERROR);
+            return false;
+        }
+
 
         if (!$img->readImage($origFilePath)) {
+            $this->log("Imagick: Failed to read file {$origFilePath}", Log::ERROR);
             return false;
         }
 
         if (!$img->resizeImage($width, 0, \Imagick::FILTER_LANCZOS, 1)) {
+            $this->log("Imagick: Failed to resize image {$origFilePath}", Log::ERROR);
             $img->clear();
             $img->destroy();
             return false;
         }
 
+        if ($this->params->get('stripmetadata', 0) !== 0) {
+            $img->stripImage();
+        }
+
         if (!$img->setImageCompressionQuality($quality)) {
+            $this->log("Imagick: Failed to set compression quality to {$quality} for {$origFilePath}", Log::ERROR);
             $img->clear();
             $img->destroy();
             return false;
         }
 
         if (!$img->writeImage($cacheFilePath)) {
+            $this->log("Imagick: Failed to write cache file {$cacheFilePath}", Log::ERROR);
             $img->clear();
             $img->destroy();
             return false;
@@ -251,27 +324,37 @@ class HbnImages extends CMSPlugin implements SubscriberInterface
         return true;
     }
 
-    private function createCacheDir(string $cacheFilePath) : void {
+    private function createCacheDir(string $cacheFilePath) : bool {
         $dirName = dirname($cacheFilePath);
         if (file_exists(JPATH_ROOT . '/' . $dirName)) {
-            return;
+            return true;
         }
         $parts = array_filter(explode('/', $dirName));
         if (empty($parts)) {
-            return;
+            return true;
         }
 
         $currentPath = JPATH_ROOT;
         foreach ($parts as $part) {
             $currentPath .= '/' . $part;
             if (!file_exists($currentPath)) {
-                Folder::create($currentPath);
+                try {
+                    Folder::create($currentPath);
+                } catch (\Joomla\Filesystem\Exception\FilesystemException $ex) {
+                    $this->log("Failed to create directory {$currentPath}: {$ex->getMessage()}", Log::ERROR);
+                    return false;
+                }
             }
             $indexFile = $currentPath . '/index.html';
             if (!file_exists($indexFile)) {
-                File::write($indexFile, '<!DOCTYPE html><title></title>');
+                if (!File::write($indexFile, '<!DOCTYPE html><title></title>')) {
+                    $this->log("Failed to write index file {$indexFile}", Log::ERROR);
+                    return false;
+                }
             }
         }
+
+        return true;
     }
 
     private function getImgTagAttrs(string $imgTag) : array {
@@ -309,6 +392,7 @@ class HbnImages extends CMSPlugin implements SubscriberInterface
         if (!empty($srcUri->getHost())) {
             $myUri = new Uri(Uri::root());
             if ($srcUri->getHost() !== $myUri->getHost()) {
+                $this->log("Is not our image, doing nothing: {$srcUri->toString()}");
                 return false;
             }
         }

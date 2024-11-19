@@ -59,7 +59,7 @@
                                description="PLG_CONTENT_HBNIMAGES_FIELD_TYPES_QUALITY_DESC"/>
                     </form>
                 </field>
-                <field name="stripmetadata" type="radio" default="0"
+                <field name="stripmetadata" type="radio" default="0" filter="intval"
                        label="PLG_CONTENT_HBNIMAGES_FIELD_STRIPMETADATA_LABEL"
                        description="PLG_CONTENT_HBNIMAGES_FIELD_STRIPMETADATA_DESC"
                        layout="joomla.form.field.radio.switcher">
