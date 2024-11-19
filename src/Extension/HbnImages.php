@@ -66,7 +66,7 @@ class HbnImages extends CMSPlugin implements SubscriberInterface
         switch ($context) {
             case 'com_content.article':
             case 'com_content.featured':
-                self::onContentPrepareArticle($article, $contextConfig);
+                $this->onContentPrepareArticle($article, $contextConfig);
                 return;
             default:
                 $this->log("No fitting configuration found. Leaving img tag as it is.");
@@ -75,6 +75,7 @@ class HbnImages extends CMSPlugin implements SubscriberInterface
     }
 
     private function onContentPrepareArticle($article, object $contextConfig) : void {
+//         (?(?=<(?P<tag>figure|picture))(<(?&tag) [^>]+>.*<\/(?&tag)>)|(<img [^>]+>))
         $article->text = preg_replace_callback('/<img [^>]*>/',
                                                function ($matches) use ($contextConfig) : string {
                                                    return self::createPicture($matches, $contextConfig);
@@ -94,6 +95,12 @@ class HbnImages extends CMSPlugin implements SubscriberInterface
 
         $srcUri = $this->checkIsOurImage($imgAttrs['src']);
         if ($srcUri === false) {
+            return $img;
+        }
+
+        $excludedexts = array_filter(explode(',', $this->params->get('excludedexts', 'svg')));
+
+        if (array_search($imgAttrs['ext'], $excludedexts) !== false) {
             return $img;
         }
 
@@ -476,7 +483,8 @@ class HbnImages extends CMSPlugin implements SubscriberInterface
         $matches = array();
         preg_match_all('/([\w-]+)=[\'"]([^"\']+)[\'"]/', $imgTag, $matches, PREG_SET_ORDER);
         if (empty($matches)) {
-            return $data;
+            $this->log("Invalid img tag", Log::ERROR);
+            return array();
         }
 
         $data = array();
@@ -489,6 +497,14 @@ class HbnImages extends CMSPlugin implements SubscriberInterface
                 $attrs[$key] = $value;
             }
         }
+
+        if (!array_key_exists('src', $attrs)) {
+            $this->log("Invalid img tag", Log::ERROR);
+            return array();
+        }
+
+        $attrs['ext'] = File::getExt($attrs['src']);
+
         if (!empty($data)) {
             $attrs['data'] = $data;
         }

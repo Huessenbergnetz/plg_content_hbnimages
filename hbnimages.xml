@@ -76,6 +76,9 @@
                     <option value="0">JNo</option>
                     <option value="1">JYes</option>
                 </field>
+                <field name="excludedexts" type="text" default="svg"
+                       label="PLG_CONTENT_HBNIMAGES_FIELD_EXCLUDEDEXTS_LABEL"
+                       description="PLG_CONTENT_HBNIMAGES_FIELD_EXCLUDEDEXTS_DESC" />
             </fieldset>
             <fieldset name="contextoptions">
                 <field name="context" type="subform" multiple="true"
