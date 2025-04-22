@@ -142,6 +142,10 @@ class HbnImages extends CMSPlugin implements SubscriberInterface
             $this->hbnLibImg = new HbnLibImg($libOpts);
         }
 
+        if (!array_key_exists('width', $imgAttrs) || !array_key_exists('height', $imgAttrs)) {
+            array_merge($imgAttrs, $this->hbnLibImg->getImageDimensions($srcUri->getPath()));
+        }
+
         $widths = get_object_vars($classConfig->mediawidths);
         $types = get_object_vars($this->params->get('types'));
 
@@ -196,21 +200,20 @@ class HbnImages extends CMSPlugin implements SubscriberInterface
         if ($this->params->get('lightbox_resize', 0) === 1) {
             $orientation = $this->getOrientation($origWidth, $origHeight);
 
+            $targetWidth  = 0;
+            $targetHeight = 0;
+
             if ($orientation == HbnImages::ORIENTATION_PORTRAIT) {
-                $targetWidth = 0;
                 $targetHeight = $this->params->get('lightbox_height', 0);
                 $targetHeight = $targetHeight > 0 ? $targetHeight : $origHeight;
-                $srcStr = $this->hbnLibImg->resizeImage($src, $targetWidth, $targetHeight,
-                                                        $this->params->get('lightbox_type', 'webp'),
-                                                        $this->params->get('lightbox_quality', 80));
             } else {
                 $targetWidth = $this->params->get('lightbox_width', 0);
                 $targetWidth = $targetWidth > 0 ? $targetWidth : $origWidth;
-                $targetHeight = 0;
-                $srcStr = $this->hbnLibImg->resizeImage($src, $targetWidth, $targetHeight,
-                                                        $this->params->get('lightbox_type', 'webp'),
-                                                        $this->params->get('lightbox_quality', 80));
             }
+
+            $srcStr = $this->hbnLibImg->resizeImage($src, $targetWidth, $targetHeight,
+                                                    $this->params->get('lightbox_type', 'webp'),
+                                                    $this->params->get('lightbox_quality', 80));
         }
 
         if (empty($srcStr)) {
@@ -225,21 +228,20 @@ class HbnImages extends CMSPlugin implements SubscriberInterface
         if ($this->params->get('lightbox_resize', 0) === 1) {
             $orientation = $this->getOrientation($origWidth, $origHeight);
 
+            $targetWidth  = 0;
+            $targetHeight = 0;
+
             if ($orientation == HbnImages::ORIENTATION_PORTRAIT) {
-                $targetWidth = 0;
                 $targetHeight = $this->params->get('lightbox_height', 0);
                 $targetHeight = $targetHeight > 0 ? $targetHeight : $origHeight;
-                $srcStr = $this->hbnLibImg->resizeImage($src, $targetWidth, $targetHeight,
-                                                        $this->params->get('lightbox_type', 'webp'),
-                                                        $this->params->get('lightbox_quality', 80));
             } else {
                 $targetWidth = $this->params->get('lightbox_width', 0);
                 $targetWidth = $targetWidth > 0 ? $targetWidth : $origWidth;
-                $targetHeight = 0;
-                $srcStr = $this->hbnLibImg->resizeImage($src, $targetWidth, $targetHeight,
-                                                        $this->params->get('lightbox_type', 'webp'),
-                                                        $this->params->get('lightbox_quality', 80));
             }
+
+            $srcStr = $this->hbnLibImg->resizeImage($src, $targetWidth, $targetHeight,
+                                                    $this->params->get('lightbox_type', 'webp'),
+                                                    $this->params->get('lightbox_quality', 80));
         }
 
         if (empty($srcStr)) {
@@ -254,6 +256,16 @@ class HbnImages extends CMSPlugin implements SubscriberInterface
         return '<a class="jcepopup" href="' . $srcStr . '"' . $gallery . '>';
     }
 
+    /**
+     * @brief Returns the attributes of the @a imgTag as a named array.
+     *
+     * Attribute keys will be the array keys, attribute values will be the array values.
+     * data-attributes will be in the data key of the array as a named array. If there is
+     * e.g. an img tag like
+     * &lt;img src="file.jpg" width="123" height="456" class="thumb picture" data-foo="bar"&gt;,
+     * it will return an array like
+     * ["src => "file.jpg", "ext" => "jpg", "width" => 123, "height" => 456, "class" => ["thumb", "picture"], "data" => ["foo" => "bar"]]
+     */
     private function getImgTagAttrs(string $imgTag) : array {
         $attrs = array();
 
@@ -293,12 +305,16 @@ class HbnImages extends CMSPlugin implements SubscriberInterface
         return $attrs;
     }
 
+    /**
+     * @brief Returns @a src as Joomla\CMS\Uri\Uri if the host of the @a src is ours,
+     * otherwise returns @c false.
+     */
     private function checkIsOurImage(string $src) : Uri|bool {
         $srcUri = new Uri($src);
         if (!empty($srcUri->getHost())) {
             $myUri = new Uri(Uri::root());
             if ($srcUri->getHost() !== $myUri->getHost()) {
-                $this->log("Check Is Our: Not our image. Doing nothing.", "checkIsOurImage");
+                $this->log("Check Is Our: Not our image. Doing nothing.");
                 return false;
             }
         }
@@ -306,6 +322,12 @@ class HbnImages extends CMSPlugin implements SubscriberInterface
         return $srcUri;
     }
 
+    /**
+     * @brief Returns a type tag string for an image based on the image type.
+     *
+     * @param $type string Has to be webp, avif or jpeg.
+     * @return A string like ' type="image/webp"'.
+     */
     private function getType(string $type) : string {
         switch($type) {
             case 'webp':
@@ -317,6 +339,9 @@ class HbnImages extends CMSPlugin implements SubscriberInterface
         }
     }
 
+    /**
+     * @brief Returns the image orientation based on the image’s width and height.
+     */
     private function getOrientation(int $width, int $height) : int {
         if ($width > $height) {
             return HbnImages::ORIENTATION_LANDSCAPE;
@@ -327,6 +352,9 @@ class HbnImages extends CMSPlugin implements SubscriberInterface
         }
     }
 
+    /**
+     * @brief Writes a log message to the Joomla! log.
+     */
     private function log(string $message, int $prio = Log::DEBUG) : void {
         Log::add($message, $prio, 'plugin.content.hbnimages');
     }
