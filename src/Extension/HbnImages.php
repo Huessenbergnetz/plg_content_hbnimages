@@ -7,6 +7,8 @@ defined('_JEXEC') or die;
 
 use Joomla\CMS\Plugin\CMSPlugin;
 use Joomla\CMS\Event\Content\ContentPrepareEvent;
+use Joomla\CMS\Event\Model\AfterSaveEvent;
+use Joomla\CMS\Event\Model\AfterDeleteEvent;
 use Joomla\Event\SubscriberInterface;
 use Joomla\CMS\Factory;
 use Joomla\CMS\Document\Document;
@@ -14,6 +16,7 @@ use Joomla\CMS\Http\HttpFactory;
 use Joomla\CMS\Uri\Uri;
 use Joomla\CMS\Image\Image;
 use Joomla\CMS\Log\Log;
+use Joomla\CMS\Component\ComponentHelper;
 use Joomla\Filesystem\File;
 use Joomla\Filesystem\Folder;
 use HBN\Images\HbnImages as HbnLibImg;
@@ -28,7 +31,9 @@ class HbnImages extends CMSPlugin implements SubscriberInterface
 
     public static function getSubscribedEvents() : array {
         return [
-            'onContentPrepare' => 'onContentPrepare'
+            'onContentPrepare' => 'onContentPrepare',
+            'onContentAfterSave' => 'onContentAfterSave',
+            'onContentAfterDelete' => 'onContentAfterDelete'
         ];
     }
 
@@ -128,19 +133,7 @@ class HbnImages extends CMSPlugin implements SubscriberInterface
             }
         }
 
-        if ($this->hbnLibImg === null) {
-            $libOpts = [
-                'converter' => $this->params->get('converter', 'joomla'),
-                'stripmetadata' => $this->params->get('stripmetadata', 0)
-            ];
-            if ($libOpts['converter'] === 'imaginary') {
-                $libOpts['imaginary_host'] = $this->params->get('imaginary_host', 'http://localhost');
-                $libOpts['imaginary_port'] = $this->params->get('imaginary_port', 9000);
-                $libOpts['imaginary_path'] = $this->params->get('imaginary_path', '');
-                $libOpts['imaginary_token'] = $this->params->get('imaginary_token', '');
-            }
-            $this->hbnLibImg = new HbnLibImg($libOpts);
-        }
+        $this->initHbnImgLib();
 
         if (!array_key_exists('width', $imgAttrs) || !array_key_exists('height', $imgAttrs)) {
             array_merge($imgAttrs, $this->hbnLibImg->getImageDimensions($srcUri->getPath()));
@@ -349,6 +342,122 @@ class HbnImages extends CMSPlugin implements SubscriberInterface
             return HbnImages::ORIENTATION_PORTRAIT;
         } else {
             return HbnImages::ORIENTATION_SQUARE;
+        }
+    }
+
+    public function onContentAfterSave(AfterSaveEvent $event) : void {
+        if ((int)$this->params->get('createthumbsonupload', 1) === 0) {
+            return;
+        }
+
+        $context = $event->getContext();
+
+        if ($context != 'com_media.file') {
+            return;
+        }
+
+        $item = $event->getItem();
+
+        if (!\in_array(strtolower($item->extension), ['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif'])) {
+            return;
+        }
+
+        $adapter = $item->adapter;
+        $fileName = $item->name;
+        $filePath = $item->path;
+
+        $types = $this->params->get('types');
+
+        $widths = array();
+        $contexts = $this->params->get('context');
+        foreach ($contexts as $context) {
+            $classes = $context->classes;
+            foreach($classes as $class) {
+                $mediawidths = $class->mediawidths;
+                foreach ($mediawidths as $mediawidth) {
+                    $w = (int)$mediawidth->width;
+                    if ($w > 0 && !\in_array($w, $widths, true)) {
+                        $widths[] = $w;
+                    }
+                }
+            }
+        }
+
+        $additionalWidths = array_filter(explode(',', $this->params->get('additionalwidths', '')));
+        foreach ($additionalWidths as $addWidth) {
+            $aw = (int)$addWidth;
+            if ($aw > 0 && !\in_array($aw, $widths, true)) {
+                $widths[] = $aw;
+            }
+        }
+
+        $sourceFilePath = ComponentHelper::getParams('com_media')->get('image_path') . $filePath . '/' . $fileName;
+        $sourceFileUri = new Uri($sourceFilePath);
+
+        $this->initHbnImgLib();
+
+        foreach ($widths as $width) {
+            foreach ($types as $type) {
+                $currentWidth = $width;
+                $currentHeight = 0;
+                $this->hbnLibImg->resizeImage($sourceFileUri, $currentWidth, $currentHeight, $type->type, $type->quality);
+            }
+        }
+
+        // create thumbnail for lightbox size
+        $dimensions = $this->hbnLibImg->getImageDimensions($sourceFilePath);
+        $origWidth = $dimensions["width"];
+        $origHeight = $dimensions["height"];
+        $orientation = $this->getOrientation($origWidth, $origHeight);
+
+        $targetWidth  = 0;
+        $targetHeight = 0;
+
+        if ($orientation == HbnImages::ORIENTATION_PORTRAIT) {
+            $targetHeight = $this->params->get('lightbox_height', 0);
+            $targetHeight = $targetHeight > 0 ? $targetHeight : $origHeight;
+        } else {
+            $targetWidth = $this->params->get('lightbox_width', 0);
+            $targetWidth = $targetWidth > 0 ? $targetWidth : $origWidth;
+        }
+
+        $this->hbnLibImg->resizeImage($sourceFileUri, $targetWidth, $targetHeight,
+                                      $this->params->get('lightbox_type', 'webp'),
+                                      $this->params->get('lightbox_quality', 80));
+    }
+
+    public function onContentAfterDelete(AfterDeleteEvent $event) : void
+    {
+        $context = $event->getContext();
+
+        if ($context != 'com_media.file') {
+            return;
+        }
+
+        $item = $event->getItem();
+        $adapter = $item->adapter;
+        $filePath = $item->path;
+
+        $sourceFilePath = ComponentHelper::getParams('com_media')->get('image_path') . $filePath;
+
+        $this->initHbnImgLib();
+
+        $this->hbnLibImg->deleteThumbnails($sourceFilePath);
+    }
+
+    private function initHbnImgLib() : void {
+        if ($this->hbnLibImg === null) {
+            $libOpts = [
+                'converter' => $this->params->get('converter', 'joomla'),
+                'stripmetadata' => $this->params->get('stripmetadata', 0)
+            ];
+            if ($libOpts['converter'] === 'imaginary') {
+                $libOpts['imaginary_host'] = $this->params->get('imaginary_host', 'http://localhost');
+                $libOpts['imaginary_port'] = $this->params->get('imaginary_port', 9000);
+                $libOpts['imaginary_path'] = $this->params->get('imaginary_path', '');
+                $libOpts['imaginary_token'] = $this->params->get('imaginary_token', '');
+            }
+            $this->hbnLibImg = new HbnLibImg($libOpts);
         }
     }
 
