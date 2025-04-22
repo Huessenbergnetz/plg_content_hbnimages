@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <extension method="upgrade" type="plugin" group="content">
     <name>PLG_CONTENT_HBNIMAGES</name>
-    <version>0.0.3</version>
+    <version>0.0.4</version>
     <description>PLG_CONTENT_HBNIMAGES_DESCRIPTION</description>
     <author>Matthias Fehring</author>
     <creationDate>2024-04-22</creationDate>
